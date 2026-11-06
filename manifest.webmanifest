@@ -1,0 +1,20 @@
+{
+  "name": "Le Chemin des Tons",
+  "short_name": "Chemin des Tons",
+  "description": "Apprends le tableau des intervalles en jouant avec ton thon.",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "id": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#8FDCF0",
+  "theme_color": "#8FDCF0",
+  "categories": ["education", "games", "music"],
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
+    {"src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml"}
+  ]
+}
