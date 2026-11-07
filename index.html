@@ -1050,7 +1050,31 @@ const G={level:save.level,lvl:null,heroX:130,cam:0,state:'idle',hearts:3,shield:
   clearT:0,phase:0,flash:null,banner:null,hop:0,dizzy:0,dust:0,amb:[],ambCfg:null,shown:0,tTotal:0,tLeft:0,tick:99,
   announced:new Set(),dyT:0,rewT:0,rsT:0,bub:0,deathFb:'',knock:0};
 function camTarget(){const lv=G.lvl;return lv?Math.max(0,Math.min(G.heroX-W*.28,lv.goalX+220-W)):0;}
+/* Temps de jeu du jour : pause proposée à 15 min, fin de session à 30 min (désactivable en classe). */
+const PLAY_SOFT=15*60,PLAY_HARD=30*60;let playSaveT=0;
+function playToday(){const k=dayKey();if(!save.play||save.play.date!==k)save.play={date:k,s:0,warned:false};return save.play;}
+function tickPlay(dt){
+  if(ovOpen||document.hidden||G.state==='idle')return;
+  playToday().s+=dt;playSaveT+=dt;if(playSaveT>10){playSaveT=0;persist();}
+}
+function gateTime(go){
+  if(save.noLimit)return false;const p=playToday();
+  if(p.s>=PLAY_HARD){
+    dlg('<h2>À demain !</h2>'+skinPreviewHTML('wow')+'<p class="say">'+(save.name?'<b>'+esc(save.name)+'</b> a':'Ton thon a')+' bien travaillé : 30 minutes aujourd’hui.</p><p>Ton cerveau retient mieux avec un peu chaque jour. Ta série t’attend demain.</p>'
+      +'<div class="acts col"><button class="btn primary big" id="tHome" type="button">Retour à l’accueil</button></div>',{focus:'#tHome',label:'À demain'});
+    $('tHome').onclick=()=>{ovOpen=false;goHome();openStart();};return true;
+  }
+  if(p.s>=PLAY_SOFT&&!p.warned){
+    p.warned=true;persist();
+    dlg('<h2>Petite pause ?</h2>'+skinPreviewHTML('happy')+'<p class="say">Tu joues depuis 15 minutes.</p><p>Ton cerveau retient mieux avec un peu chaque jour qu’avec beaucoup d’un coup.</p>'
+      +'<div class="acts col"><button class="btn primary big" id="tStop" type="button">Faire une pause</button><button class="btn quiet" id="tMore" type="button">Encore un niveau</button></div>',{focus:'#tStop',label:'Petite pause'});
+    $('tStop').onclick=()=>{ovOpen=false;goHome();openStart();};
+    $('tMore').onclick=()=>{closeOverlay();go();};return true;
+  }
+  return false;
+}
 function startLevel(n,keepStats,bonus,read){
+  if(!G.gatePass&&gateTime(()=>{G.gatePass=true;startLevel(n,keepStats,bonus,read);G.gatePass=false;}))return;
   G.read=!!read&&!bonus;G.bonus=!!bonus;G.bonusCells=bonus?weakCells(save):null;
   G.level=n;G.lvl=bonus?genLevel(2,(Math.random()*1e9)|0,6):G.read?genLevel(n+1,(Math.random()*1e9)|0,(n+1)%THEMES.length):genLevel(n,(Math.random()*1e9)|0);
   G.heroX=130;G.oi=0;G.state='walk';G.q=null;G.cell=null;G.locked=false;
@@ -1509,6 +1533,7 @@ function openSettings(back,closable){
     +grp('Temps pour répondre','mode',[['normal','Normal','9 à 14 secondes par question.'],['long','Long','18 à 28 secondes par question.'],['off','Sans limite','Pas de chrono.']],save.timeMode)
     +'<section class="grp"><h3>Apparence</h3><div class="seg" role="group" aria-label="Apparence">'+[['auto','Auto'],['light','Clair'],['dark','Sombre']].map(m=>'<button class="btn" type="button" data-th="'+m[0]+'" aria-pressed="'+((save.theme||'auto')===m[0])+'">'+m[1]+'</button>').join('')+'</div><p class="note">Auto : suit les réglages de ton appareil.</p>'
     +'<button class="btn calm" id="hCalm" type="button" aria-pressed="'+(!!save.calm)+'"><b>Moins d’animations</b><small>Moins de mouvement et d’éclats à l’écran.</small></button></section>'
+    +grp('Temps de jeu','limit',[['on','Pause conseillée','Une pause est proposée après 15 minutes. Le jeu s’arrête après 30 minutes par jour.'],['off','Sans limite','Pour jouer en classe, projeté au tableau.']],save.noLimit?'off':'on')
     +'<section class="grp"><h3>Nom de ton thon</h3>'+nameRowHTML('s')+'</section>'
     +installSection()
     +'<section class="grp"><h3>Son</h3><div class="seg">'+soundButtons()+'</div></section>'
@@ -1522,6 +1547,10 @@ function openSettings(back,closable){
   $('overlay').querySelectorAll('[data-learn]').forEach(b=>b.addEventListener('click',()=>{
     save.learn=b.dataset.learn==='true';persist();
     $('overlay').querySelectorAll('[data-learn]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  }));
+  $('overlay').querySelectorAll('[data-limit]').forEach(b=>b.addEventListener('click',()=>{
+    save.noLimit=b.dataset.limit==='off';persist();
+    $('overlay').querySelectorAll('[data-limit]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
   }));
   $('overlay').querySelectorAll('[data-th]').forEach(b=>b.addEventListener('click',()=>{
     save.theme=b.dataset.th;persist();applyTheme();
@@ -2228,7 +2257,7 @@ function initAmb(){G.amb=[];G.ambCfg=G.lvl.theme.bubble||null;if(!G.ambCfg||redu
 /* =================== BOUCLE =================== */
 const SPEED=185;
 function update(dt){
-  G.t+=dt;
+  G.t+=dt;tickPlay(dt);
   if(G.shake>0)G.shake-=dt;
   G.particles.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=(p.round?-60:520)*dt;p.life-=dt*(p.round?.9:1.1);});
   G.particles=G.particles.filter(p=>p.life>0);
