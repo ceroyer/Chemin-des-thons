@@ -1946,7 +1946,11 @@ function drawHero(x,y,phase,moving,up,fx){
   const swim=reduce?0:Math.sin(G.t*3)*5;
   drawFish(x,y-26+swim,phase,moving,up,save.skin,HS,fx);
 }
-const HERO_NAMES=['Thon Jovi','Tony Thon','Thonthon','Capitaine Thon','Thonald','Thonny Stark','Mister Thon','Thon Ton','Sushi','Bubulle','Thonico','Madame Thon'];
+const HERO_NAMES=['Thon Jovi','Tony Thon','Thonthon','Capitaine Thon','Thonald','Thonny Stark','Mister Thon','Thon Ton','Sushi','Bubulle','Thonico','Madame Thon',
+  /* jeux de mots musicaux */
+  'Beethonven','Vivalthon','Chopithon','Mozathon','Thonbone','Barython','Saxothon','Thonbourin','Thontrebasse','Diapathon','Thonalité','Thonique','Demi-Thon','Thon Majeur','Thonata','Mélothon','Do Ré Mi Thon',
+  /* jeux de mots en « ton » */
+  'Aston Martin','Baston','Béton','Gaston','Croûton','Piston','Marathon','Plankthon','Thonnerre','Peloton'];
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const KIND_STOP={angler:215,squid:210,lava:190,avalanche:200,cavein:200,rock:190,net:170,shark:215,diver:225,urchin:200,jelly:170,crab:230,puffer:195};
 const KIND_TOP={angler:210,squid:260,lava:240,avalanche:215,cavein:230,rock:205,net:250,shark:175,diver:180,urchin:185,jelly:240,crab:200,puffer:205};
