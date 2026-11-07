@@ -164,8 +164,8 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px;box-shadow:
 .today .strk{display:flex;align-items:center;gap:8px;min-width:0}
 .today small{display:block;font-size:.78rem;line-height:1.2}
 .today b{font-size:1.05rem;line-height:1.1}
-.today .recs{display:flex;gap:14px;text-align:center;flex:none}@media (max-width:340px){.today .trow2{flex-wrap:wrap}.today .recs{width:100%;justify-content:space-around}}
-.today .daily{display:grid;grid-template-columns:1fr auto;gap:4px 8px;align-items:center;margin-top:8px}
+.today .snum{font-size:1.7rem;line-height:1}.today .buoy{flex:none;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:4px 12px;font-size:1.05rem}.today .buoy.none{opacity:.55}.today .buoytip{margin:8px 0 0;padding:8px 10px;border-radius:12px;background:var(--sunbg);border:2px solid #B07A00;font-size:.92rem}.rh{margin:4px 0 6px;font-size:1rem}.recs2{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;margin:4px 0 10px}.recs2 div{border:2px solid var(--line);border-radius:12px;padding:6px 4px}.recs2 b{display:block;font-size:1.3rem}.recs2 small{display:block;font-size:.75rem;line-height:1.2}
+.today .daily{display:flex;justify-content:space-between;gap:8px;margin:8px 0 0;padding-top:8px;border-top:2px solid var(--tint);font-size:.9rem}.today .daily.done{color:var(--ok);font-weight:700}
 .today .dl{grid-column:1/3;font-size:.9rem}
 .today .bar{height:10px;border-radius:5px;background:var(--tint);overflow:hidden}
 .today .bar i{display:block;height:100%;background:var(--prim);border-radius:5px;transition:width .4s}
@@ -1562,10 +1562,18 @@ function todayHTML(){
   const fs=sn.n?(.72+Math.min(sn.n,30)/30*.6):.7,grow=sn.n>(save.flameSeen||0);
   const flame='<span class="flame'+(sn.n?'':' off')+(grow?' grow':'')+(sn.n>=7?' big':'')+'" aria-hidden="true"><span style="--fs:'+fs.toFixed(2)+';transform:scale('+fs.toFixed(2)+')"><svg width="34" height="34" viewBox="0 0 24 24"><path d="M12 2c1 4 6 6 6 12a6 6 0 01-12 0c0-3 2-4 3-6 1 1 1 2 2 2 1-2 1-5 1-8z" fill="'+(sn.n?'#FF8A2B':'#B9C6DA')+'" stroke="#14305E" stroke-width="1.8" stroke-linejoin="round"/>'+(sn.n?'<path d="M12 21c-2.2 0-3.6-1.4-3.6-3.4 0-1.8 1.3-2.6 2.3-4 .6 1 1.2 1.4 1.7 1.4 1 1 3.2 1.8 3.2 4 0 1.4-1.4 2-3.6 2z" fill="#FFD54A"/>':'')+'</svg></span></span>';
   if(grow){save.flameSeen=sn.n;persist();}
-  return '<section class="today" aria-label="Aujourd’hui"><div class="trow2"><div class="strk">'+flame+'<div><b class="snum'+(grow?' bump':'')+'">'+(sn.n?sn.n+(sn.n>1?' jours':' jour'):'0 jour')+'</b><small>'+(sn.n?(sn.atRisk?(sn.saves?'Une bouée sauvera ta série':'Joue aujourd’hui pour garder ta série !'):'d’affilée'):'Joue pour lancer ta série')+((save.bag&&save.bag.freeze)?' · bouée ×'+save.bag.freeze:'')+'</small></div></div>'
-    +'<div class="recs"><div><b>'+save.best+'</b><small>record</small></div><div><b>'+(save.bestCombo||0)+'</b><small>meilleure série</small></div></div></div>'
-    +'<div class="daily"><span class="dl">'+(d.done?'Défi du jour réussi ! Cadeau : une lanterne.':'Défi du jour : '+def.text)+'</span><div class="bar" role="progressbar" aria-label="Progression du défi du jour" aria-valuemin="0" aria-valuemax="'+def.goal+'" aria-valuenow="'+d.prog+'"><i style="width:'+pct+'%"></i></div><span class="dn">'+d.prog+'/'+def.goal+'</span></div>'
-    +(g?'<p class="goal">'+goalText(g)+'</p>':'')+'</section>';
+  const nb=(save.bag&&save.bag.freeze)||0;
+  const buoy='<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="#D8402F" stroke-width="5"/><circle cx="12" cy="12" r="9" fill="none" stroke="#fff" stroke-width="5" stroke-dasharray="7 7.1"/><circle cx="12" cy="12" r="11.3" fill="none" stroke="#14305E" stroke-width="1.5"/><circle cx="12" cy="12" r="6.7" fill="none" stroke="#14305E" stroke-width="1.5"/></svg>';
+  const sub=sn.n?(sn.atRisk?(sn.saves?'Une bouée sauvera ta série':'Joue aujourd’hui pour la garder'):(sn.n>1?'jours d’affilée':'jour d’affilée')):'Joue pour lancer ta série';
+  return '<section class="today" aria-label="Aujourd’hui"><div class="trow2"><div class="strk">'+flame+'<div><b class="snum'+(grow?' bump':'')+'">'+sn.n+'</b><small>'+sub+'</small></div></div>'
+    +'<button class="btn buoy'+(nb?'':' none')+'" id="hBuoy" type="button" aria-expanded="false" aria-controls="buoyTip" aria-label="Bouées : '+nb+'. À quoi ça sert ?">'+buoy+'<b aria-hidden="true">'+nb+'</b></button></div>'
+    +'<p class="buoytip" id="buoyTip" hidden>Une bouée garde ta série si tu rates un jour.</p>'
+    +'<p class="daily'+(d.done?' done':'')+'">'+(d.done?'Défi du jour réussi':'<span>Défi : '+def.text+'</span><b>'+d.prog+'/'+def.goal+'</b>')+'</p>'
+    +'</section>';
+}
+function wireBuoy(){
+  const b=$('hBuoy'),t=$('buoyTip');if(!b)return;let tm;
+  b.onclick=()=>{const open=t.hidden;t.hidden=!open;b.setAttribute('aria-expanded',open);clearTimeout(tm);if(open){play('pop');tm=setTimeout(()=>{t.hidden=true;b.setAttribute('aria-expanded','false');},4500);}};
 }
 function openStart(){
   if(!save.named&&!save.name){openWelcome();return;}
@@ -1592,6 +1600,7 @@ function openStart(){
   $('hDress').onclick=()=>openWardrobe(back);
   $('hSet').onclick=()=>openSettings(back,false);
   $('hMed').onclick=()=>openMedals(back);
+  wireBuoy();
 }
 function openWin(){
   ensureDaily(save,dayKey());bumpDaily('level');
@@ -1664,7 +1673,7 @@ function openMedals(back){
     const t=medalTier(save,m),v=m.val(save),nx=m.t[t],pct=nx?Math.round(Math.min(1,v/nx)*100):100;
     return '<div class="mrow"><div class="mdots">'+[0,1,2].map(k=>medalDot(k,k<t)).join('')+'</div><div class="mbd"><b>'+m.name+'</b><small>'+(nx?v+' / '+nx+' pour la médaille '+TIERS[t]:'Toutes les médailles !')+'</small><div class="bar"><i style="width:'+pct+'%"></i></div></div></div>';
   }).join('');
-  dlg('<div class="hd"><h2>Médailles</h2></div><div class="bd"><p class="note">Tes cadeaux : lanterne ×'+bag.lamp+' · bouclier ×'+bag.shield+' · bouée ×'+bag.freeze+'</p>'+rows+'</div><div class="ft"><button class="btn primary big" id="mBack" type="button">Retour</button></div>',{closable:!!back,focus:'#mBack',label:'Médailles',split:true});
+  dlg('<div class="hd"><h2>Médailles</h2></div><div class="bd"><h3 class="rh">Tes records</h3><div class="recs2"><div><b>'+save.best+'</b><small>points</small></div><div><b>'+(save.bestCombo||0)+'</b><small>réponses d’affilée</small></div><div><b>'+Math.max((save.streak&&save.streak.best)||0,(save.streak&&save.streak.n)||0)+'</b><small>jours d’affilée</small></div></div><p class="note">Tes cadeaux : lanterne ×'+bag.lamp+' · bouclier ×'+bag.shield+' · bouée ×'+bag.freeze+'</p>'+rows+'</div><div class="ft"><button class="btn primary big" id="mBack" type="button">Retour</button></div>',{closable:!!back,focus:'#mBack',label:'Médailles',split:true});
   $('mBack').onclick=()=>{if(back)back();else closeOverlay();};
 }
 
