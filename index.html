@@ -172,7 +172,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px;box-shadow:
 .today .dn{font-size:.85rem;font-weight:700}
 .today .goal{margin:8px 0 0;font-size:.88rem}
 .say{margin:0 0 4px;text-align:left;font-size:.95rem}
-.links{display:flex;justify-content:flex-start;gap:16px}
+.links{display:flex;justify-content:flex-start;gap:16px}.acts.col .links .btn,.links .btn{width:auto;flex:none;padding-left:0;padding-right:8px}
 .chestzone{display:grid;place-items:center start;margin:4px 0 0}
 .chest .lid{transform-origin:12px 46px;transition:transform .35s cubic-bezier(.3,1.6,.5,1)}
 .chest.shake{animation:chestShake .8s ease-in-out}
@@ -210,7 +210,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px;box-shadow:
 .skinbtn small{display:block;font-size:.72rem}
 .skinbtn:disabled small{color:var(--ink)}
 .sw{width:18px;height:18px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 2px var(--ink);flex:none}
-#pv{display:block;width:100%;max-width:280px;aspect-ratio:240/150;border-radius:14px;margin:6px 0 8px;background:#D7F4FA}
+#pv{display:block;width:100%;height:clamp(140px,26vh,190px);border-radius:14px;margin:6px 0 8px;background:#D7F4FA}
 .bigstars{font-size:3rem;letter-spacing:6px;color:#B07A00;margin:2px 0 6px;line-height:1.1}
 .bigstars span{display:inline-block;animation:starIn .55s both}
 .bigstars .off{color:#9DB5DA}
@@ -1615,7 +1615,7 @@ function openStart(){
   else if(sn0.atRisk){mood='happy';say='On joue aujourd’hui pour garder la série ?';}
   else if(save.streak&&save.streak.last){mood='sad';say='Tu m’as manqué… On rejoue ?';}
   else if(st.found>0){mood='happy';say='Content de te revoir !';}
-  dlg('<h1>Le Chemin des Tons</h1>'+skinPreviewHTML(mood)+'<p class="say" aria-live="polite">'+(save.name?'<b>'+esc(save.name)+' :</b> ':'')+'« '+say+' »</p>'
+  dlg('<h1 class="sr">Le Chemin des Tons</h1>'+skinPreviewHTML(mood)+'<p class="say" aria-live="polite">'+(save.name?'<b>'+esc(save.name)+' :</b> ':'')+'« '+say+' »</p>'
     +todayHTML()
     +'<div class="acts col"><button class="btn primary big" id="hGo" type="button">'+(again?'Continuer · niveau '+save.level:'Jouer')+'</button>'
     +'<div class="tiles"><button class="btn tile" id="hLvl" type="button"><svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#14305E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V5M4 5h12l-2 4 2 4H4"/></svg><span>Niveaux</span></button>'
@@ -2240,11 +2240,13 @@ function drawThumb(c,slot,id){
 }
 function drawPreview(){
   const pc=document.getElementById('pv');if(!pc)return;
-  const main=ctx;ctx=pc.getContext('2d');const k=pc.width/240;ctx.setTransform(k,0,0,k,0,0);
-  const H=pc.height/k;
-  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#8FDCF0');g.addColorStop(1,'#D7F4FA');ctx.fillStyle=g;ctx.fillRect(0,0,240,H);
-  ctx.fillStyle='#F2D798';ctx.fillRect(0,H-22,240,22);
-  drawFish(118,H-24+(reduce?0:Math.sin(G.t*3)*3),G.t*4,true,false,save.skin,Math.min(1.15,(H-40)/118),{mood:pc.dataset.mood||undefined});
+  const d=Math.min(window.devicePixelRatio||1,2),cw=Math.round(pc.clientWidth*d),ch=Math.round(pc.clientHeight*d);
+  if(cw&&ch&&(pc.width!==cw||pc.height!==ch)){pc.width=cw;pc.height=ch;}
+  const main=ctx;ctx=pc.getContext('2d');const k=pc.height/150;ctx.setTransform(k,0,0,k,0,0);
+  const H=150,PW=pc.width/k;
+  const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#8FDCF0');g.addColorStop(1,'#D7F4FA');ctx.fillStyle=g;ctx.fillRect(0,0,PW,H);
+  ctx.fillStyle='#F2D798';ctx.fillRect(0,H-22,PW,22);
+  drawFish(PW/2-2,H-24+(reduce?0:Math.sin(G.t*3)*3),G.t*4,true,false,save.skin,Math.min(1.15,(H-40)/118),{mood:pc.dataset.mood||undefined});
   ctx=main;
 }
 function burst(x,y,cols,n){for(let i=0;i<n;i++)G.particles.push({x,y,vx:(Math.random()-.5)*260,vy:-Math.random()*240-40,life:1,c:cols[i%cols.length],s:5+Math.random()*5});}
