@@ -61,7 +61,7 @@ button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 button:focus-visible{outline:3px solid var(--ink);outline-offset:2px;box-shadow:0 0 0 6px var(--sun)}
 #stage{position:relative;flex:1;min-height:0;overflow:hidden}
 #cv{position:absolute;left:0;top:0;display:block}
-#toast{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:calc(100% - 20px);max-width:640px;font-size:clamp(1rem,3.6vw,1.25rem);line-height:1.3;padding:10px 16px;border-radius:14px;border:2px solid var(--ok);background:var(--okbg);color:var(--ok);font-weight:700;text-align:left;opacity:0;pointer-events:none;transition:opacity .2s}
+#toast{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:calc(100% - 20px);max-width:640px;font-size:clamp(1rem,3.6vw,1.25rem);line-height:1.3;padding:10px 16px;border-radius:14px;border:2px solid var(--ok);background:var(--okbg);color:var(--ok);font-weight:700;text-align:center;text-wrap:balance;opacity:0;pointer-events:none;transition:opacity .2s}
 #toast.show{opacity:1}
 #toast.warn{background:var(--sunbg);color:var(--ink);border-color:#B07A00}
 #toast.ko{background:var(--kobg);color:var(--ko);border-color:var(--ko)}
