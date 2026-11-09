@@ -111,7 +111,7 @@ button:focus-visible{outline:3px solid var(--ink);outline-offset:2px;box-shadow:
 .btn.choice b{font-size:1.05rem}
 .btn.choice small{font-size:.88rem;line-height:1.35;font-weight:400}
 .btn.choice[aria-pressed="true"]{background:var(--prim);border-color:var(--prim);color:var(--onprim)}
-#overlay{position:fixed;inset:0;background:rgba(20,48,94,.62);display:grid;place-items:center;padding:calc(12px + env(safe-area-inset-top)) 12px 12px;overflow:auto;z-index:10}
+#overlay.full{background:var(--bg);place-items:start center;padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom))}#overlay.full .dlg{box-shadow:none;border-radius:0;max-height:none;overflow:visible;animation:none;padding:0;max-width:min(560px,100%)}#overlay.full.splitmode{padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}#overlay.full .dlg.split{overflow:hidden;height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));max-height:none;background:transparent}#overlay{position:fixed;inset:0;background:rgba(20,48,94,.62);display:grid;place-items:center;padding:calc(12px + env(safe-area-inset-top)) 12px 12px;overflow:auto;z-index:10}
 .dlg{background:var(--bg);border-radius:22px;padding:18px 20px;max-width:640px;width:100%;max-height:calc(100dvh - 24px);overflow:auto;box-shadow:0 12px 40px rgba(20,48,94,.35);animation:pop .3s cubic-bezier(.2,1.3,.4,1)}
 .dlg h1,.dlg h2,.dlg h3{margin:0 0 6px;line-height:1.15;text-wrap:balance}
 .dlg h1{font-size:1.9rem}.dlg h2{font-size:1.5rem}.dlg h3{font-size:1.05rem;margin-top:14px}
@@ -617,8 +617,8 @@ function loadSave(storage){
 }
 function applyAnswer(save,cell,ok,type){
   const c=cellState(save,cell.key);
-  if(ok){c.s=Math.min(3,c.s+(type==='T4'?0.5:1));c.seen=1;c.ok++;}
-  else{c.s=Math.max(0,c.s-1);c.ko++;}
+  if(ok){c.s=Math.min(3,c.s+(type==='T4'?0.5:1));c.seen=1;c.ok++;c.miss=0;}
+  else{c.s=Math.max(0,c.s-1);c.ko++;c.miss=(c.miss||0)+1;if(c.miss>=2&&c.seen){c.re=1;c.miss=0;}}
 }
 function stats(save){
   let found=0,mastered=0;
@@ -1222,9 +1222,12 @@ function showQuestion(){
   const pk=G.read?{cell:null,intro:false}:G.bonus?{cell:pickCell(save,Math.random,G.recent,G.bonusCells),intro:false}:save.learn?learnPick(save,Math.random,G.recent,levelLimit(G.level)):{cell:pickCell(save,Math.random,G.recent),intro:false};
   const rq=G.read?genReadQuestion(G.level,Math.random,G.recent[G.recent.length-1]):null;
   G.cell=rq?rq.cell:pk.cell;
+  if(!rq&&!pk.intro&&save.cells[G.cell.key]&&save.cells[G.cell.key].re)pk.intro=true;
+  const recall=!rq&&pk.intro&&!!(save.cells[G.cell.key]&&save.cells[G.cell.key].seen);
   G.recent.push(G.cell.key);if(G.recent.length>3)G.recent.shift();
   const q=G.q=rq||(pk.intro?introQuestion(G.cell,Math.random):makeQuestion(G.cell,(save.cells[G.cell.key]||{s:0}).s,Math.random));
-  if(pk.intro)cellState(save,G.cell.key).seen=1;
+  if(pk.intro){const cs=cellState(save,G.cell.key);cs.seen=1;cs.re=0;}
+  G.recall=recall;
   G.locked=false;G.state='ask';
   const T=pk.intro?0:timeFor(q.type,G.level,save.timeMode);G.tTotal=T;G.tLeft=T;G.tick=99;
   $('sheet').hidden=false;$('opts').hidden=false;$('qtext').hidden=false;$('after').hidden=true;
@@ -1251,7 +1254,7 @@ function showQuestion(){
   if(pk.intro){
     const c=G.cell,r=c.row;
     const first=Object.keys(save.cells).length<=1;
-    $('intro').innerHTML='<span class="newtag">Nouveau</span><p class="big">'+bigText(c)+'</p>'+cellRow(r,c,null)
+    $('intro').innerHTML='<span class="newtag">'+(G.recall?'Rappel':'Nouveau')+'</span><p class="big">'+bigText(c)+'</p>'+cellRow(r,c,null)
       +'<p class="rule">'+(first?'1 ton = 2 demi-tons.':ruleFor(c))+'</p>'
       +'<button class="btn primary big" id="btnGot" type="button">Compris</button>';
     G.introShow=true;$('intro').hidden=false;$('qtext').hidden=true;$('opts').hidden=true;$('trow').hidden=true;
@@ -1357,13 +1360,14 @@ function dlg(html,o){
   o=o||{};const ov=$('overlay');
   if(!ovOpen){prevFocus=document.activeElement;ovOnClose=o.onClose||null;play('open');}
   ov.innerHTML='<div class="dlg'+(o.split?' split':'')+'" role="dialog" aria-modal="true" aria-label="'+(o.label||'Fenêtre')+'">'+html+'</div>';
-  ov.classList.toggle('bottom',!!o.bottom);
+  const keepFull=ovOpen&&ov.classList.contains('full')&&!o.bottom;
+  ov.classList.toggle('bottom',!!o.bottom);ov.classList.toggle('full',!!o.full||keepFull);ov.classList.toggle('splitmode',!!o.split);
   ov.hidden=false;ovOpen=true;ovClosable=!!o.closable;ov.scrollTop=0;
   onHome=o.label==='Accueil';renderInstBar();
   const f=ov.querySelector(o.focus||'button');if(f)f.focus({preventScroll:true});
 }
 function closeOverlay(){
-  $('overlay').hidden=true;$('overlay').innerHTML='';$('overlay').classList.remove('bottom','hasbar');ovOpen=false;onHome=false;play('close');
+  $('overlay').hidden=true;$('overlay').innerHTML='';$('overlay').classList.remove('bottom','hasbar','full','splitmode');ovOpen=false;onHome=false;play('close');
   const cb=ovOnClose;ovOnClose=null;
   if(prevFocus&&prevFocus.focus&&document.contains(prevFocus)&&!prevFocus.disabled)prevFocus.focus({preventScroll:true});
   if(cb)cb();
@@ -1543,6 +1547,7 @@ function openSettings(back,closable){
   const ic='<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 108-8H7"/><path d="M7 1v6h6" transform="rotate(0)"/></svg>';
   dlg('<div class="hd"><h2>Réglages</h2></div><div class="bd">'
     +grp('Façon de jouer','learn',[[true,'Découverte','Une nouvelle case à la fois. Le jeu t’explique avant de poser la question.'],[false,'Entraînement','Tout le tableau, dans le désordre. Pour réviser.']],!!save.learn)
+    +'<section class="grp"><button class="btn calm" id="sRelearn" type="button"><b>Revoir les explications</b><small aria-live="polite">Les cases déjà vues seront réexpliquées au fil du jeu.</small></button></section>'
     +grp('Temps pour répondre','mode',[['normal','Normal','9 à 14 secondes par question.'],['long','Long','18 à 28 secondes par question.'],['off','Sans limite','Pas de chrono.']],save.timeMode)
     +'<section class="grp"><h3>Apparence</h3><div class="seg" role="group" aria-label="Apparence">'+[['auto','Auto'],['light','Clair'],['dark','Sombre']].map(m=>'<button class="btn" type="button" data-th="'+m[0]+'" aria-pressed="'+((save.theme||'auto')===m[0])+'">'+m[1]+'</button>').join('')+'</div><p class="note">Auto : suit les réglages de ton appareil.</p>'
     +'<button class="btn calm" id="hCalm" type="button" aria-pressed="'+(!!save.calm)+'"><b>Moins d’animations</b><small>Moins de mouvement et d’éclats à l’écran.</small></button></section>'
@@ -1557,6 +1562,8 @@ function openSettings(back,closable){
     save.timeMode=b.dataset.mode;persist();
     $('overlay').querySelectorAll('[data-mode]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
   }));
+  $('sRelearn').onclick=()=>{let n=0;CELLS.forEach(c=>{const st=save.cells[c.key];if(st&&st.seen){st.re=1;n++;}});persist();
+    $('sRelearn').querySelector('small').textContent=n?'C’est noté : les explications reviendront au fil du jeu.':'Tu n’as encore vu aucune case : les explications viendront en jouant.';$('sRelearn').setAttribute('aria-pressed','true');play('pop');};
   $('overlay').querySelectorAll('[data-learn]').forEach(b=>b.addEventListener('click',()=>{
     save.learn=b.dataset.learn==='true';persist();
     $('overlay').querySelectorAll('[data-learn]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
@@ -1593,7 +1600,7 @@ function wireName(pre,onchange){
 function openWelcome(){
   dlg('<h1>Bienvenue !</h1><div class="welcome">'+skinPreviewHTML('wow').replace('<canvas','<canvas class="pop"')+'</div>'
     +'<p class="say">Voici ton thon ! Comment va-t-il s’appeler ?</p>'+nameRowHTML('w')
-    +'<div class="acts col"><button class="btn primary big" id="wOk" type="button">C’est parti !</button></div>',{focus:'#wName',label:'Bienvenue'});
+    +'<div class="acts col"><button class="btn primary big" id="wOk" type="button">C’est parti !</button></div>',{focus:'#wName',label:'Bienvenue',full:true});
   wireName('w');
   const go=()=>{if(!save.name){save.name=HERO_NAMES[Math.floor(Math.random()*HERO_NAMES.length)];}save.named=true;persist();play('win');ovOpen=false;openStart();};
   $('wOk').onclick=go;
@@ -1635,7 +1642,7 @@ function openStart(){
     +'<button class="btn tile" id="hTable" type="button"><svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#14305E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16M4 15h16M10 4v16"/></svg><span>Tableau</span></button>'
     +'<button class="btn tile" id="hDress" type="button"><svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#14305E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l5-4h8l5 4-3 3-2-1v9H8v-9l-2 1z"/></svg><span>Garde-robe</span>'+(nu?'<i class="dot" aria-label="'+nu+' nouveau"></i>':'')+'</button>'
     +'<button class="btn tile" id="hMed" type="button"><svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="#14305E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="15" r="5.5"/><path d="M8.5 10.5L6 3h4l2 4 2-4h4l-2.5 7.5"/></svg><span>Médailles</span></button></div>'
-    +'<div class="links ctr"><button class="btn quiet" id="hSet" type="button">Réglages</button></div></div>',{focus:'#hGo',label:'Accueil'});
+    +'<div class="links ctr"><button class="btn quiet" id="hSet" type="button">Réglages</button></div></div>',{focus:'#hGo',label:'Accueil',full:true});
   $('hGo').onclick=()=>{closeOverlay();const nx=nextStep(save);startLevel(nx.n,false,false,nx.read);};
   $('hLvl').onclick=()=>openLevels(back);
   $('hTable').onclick=()=>openTable(back);
